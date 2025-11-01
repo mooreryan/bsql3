@@ -1,11 +1,18 @@
 import gleam/dynamic/decode.{type Decoder, type Dynamic}
 import gleam/list
-import gleam/option.{type Option, None, Some}
+import gleam/option.{type Option, None}
 import gleam/result
 import gleam/string
 
 pub type Error {
-  SqliteError(name: String, code: String, message: String)
+  /// Errors that originate in the JS FFI code. Could be a better-sqlite3 error,
+  /// could be a regular JS error, etc. The `code` will often be sqlite3 error
+  /// codes as returned by the better-sqlite3 package.
+  ///
+  /// If any of the fields are not present in the error, `"~UNKNOWN~"` will be
+  /// used.
+  ///
+  JsError(name: String, code: String, message: String)
   DecodeError(message: String)
 }
 
@@ -118,6 +125,40 @@ pub fn run(
   statement: Statement,
   with bind_parameters: List(Value),
 ) -> Result(Nil, Error)
+
+@external(javascript, "./better_sqlite3_ffi.mjs", "close")
+pub fn close(database: Database) -> Result(Nil, Error)
+
+@external(javascript, "./better_sqlite3_ffi.mjs", "pragma")
+pub fn pragma(database: Database, sql: String) -> Result(Nil, Error)
+
+pub fn pragma_simple(
+  database: Database,
+  sql: String,
+  expecting decoder: Decoder(a),
+) -> Result(a, Error) {
+  use value <- result.try(do_pragma_simple(database, sql))
+  decode.run(value, decoder) |> result.map_error(decode_error)
+}
+
+@external(javascript, "./better_sqlite3_ffi.mjs", "pragma_simple")
+fn do_pragma_simple(database: Database, sql: String) -> Result(Dynamic, Error)
+
+pub fn pragma_all(
+  database: Database,
+  sql: String,
+  expecting decoder: Decoder(a),
+) -> Result(List(a), Error) {
+  use rows <- result.try(do_pragma_all(database, sql))
+  list.try_map(over: rows, with: fn(row) { decode.run(row, decoder) })
+  |> result.map_error(decode_error)
+}
+
+@external(javascript, "./better_sqlite3_ffi.mjs", "pragma_all")
+fn do_pragma_all(
+  database: Database,
+  sql: String,
+) -> Result(List(Dynamic), Error)
 
 fn decode_error(errors: List(decode.DecodeError)) -> Error {
   let assert [decode.DecodeError(expected, actual, path), ..] = errors

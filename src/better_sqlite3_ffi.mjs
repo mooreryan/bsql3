@@ -10,7 +10,7 @@ import {
 } from "../gleam_stdlib/gleam/option.mjs";
 
 import {
-  Error$SqliteError,
+  Error$JsError,
   DatabaseBuilder$DatabaseBuilder$path,
   DatabaseBuilder$DatabaseBuilder$readonly,
   DatabaseBuilder$DatabaseBuilder$file_must_exist,
@@ -64,16 +64,6 @@ function database_options_from_database_builder(database_builder) {
   return opts;
 }
 
-export function convert_error(error) {
-  return Result$Error(
-    Error$SqliteError(
-      error.name || "~UNKNOWN~",
-      error.code || "~UNKNOWN~",
-      error.message || "~UNKNOWN~",
-    ),
-  );
-}
-
 export function exec(database, sql) {
   try {
     // This method returns `this`, but we will return Nil to Gleam
@@ -115,4 +105,54 @@ export function all(statement, bind_parameters) {
 
 export function coerce(value) {
   return value;
+}
+
+export function close(database) {
+  try {
+    database.close();
+    return Result$Ok(undefined);
+  } catch (error) {
+    return convert_error(error);
+  }
+}
+
+export function pragma(database, sql) {
+  try {
+    database.pragma(sql);
+    return Result$Ok(undefined);
+  } catch (error) {
+    return convert_error(error);
+  }
+}
+
+export function pragma_simple(database, sql) {
+  try {
+    const value = database.pragma(sql, { simple: simple });
+    return Result$Ok(value);
+  } catch (error) {
+    return convert_error(error);
+  }
+}
+
+export function pragma_all(database, sql) {
+  try {
+    const value = database.pragma(sql);
+    return Result$Ok(List.fromArray(value));
+  } catch (error) {
+    return convert_error(error);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Utils ---------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+
+export function convert_error(error) {
+  return Result$Error(
+    Error$JsError(
+      error.name || "~UNKNOWN~",
+      error.code || "~UNKNOWN~",
+      error.message || "~UNKNOWN~",
+    ),
+  );
 }
