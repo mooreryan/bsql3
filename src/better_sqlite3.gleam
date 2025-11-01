@@ -1,10 +1,17 @@
-import gleam/option.{type Option, None}
+import gleam/dynamic/decode.{type Decoder, type Dynamic}
+import gleam/list
+import gleam/option.{type Option, None, Some}
+import gleam/result
+import gleam/string
 
 pub type Error {
   SqliteError(name: String, code: String, message: String)
+  DecodeError(message: String)
 }
 
 pub type Database
+
+pub type Statement
 
 pub type DatabaseBuilder {
   DatabaseBuilder(
@@ -75,3 +82,55 @@ pub fn with_native_binding(
 
 @external(javascript, "./better_sqlite3_ffi.mjs", "build_database")
 pub fn build(database_builder: DatabaseBuilder) -> Result(Database, Error)
+
+@external(javascript, "./better_sqlite3_ffi.mjs", "exec")
+pub fn exec(database: Database, sql: String) -> Result(Nil, Error)
+
+@external(javascript, "./better_sqlite3_ffi.mjs", "prepare")
+pub fn prepare(database: Database, sql: String) -> Result(Statement, Error)
+
+pub type Value
+
+@external(javascript, "./better_sqlite3_ffi.mjs", "coerce")
+pub fn coerce_string(value: String) -> Value
+
+@external(javascript, "./better_sqlite3_ffi.mjs", "coerce")
+pub fn coerce_int(value: Int) -> Value
+
+pub fn all(
+  statement: Statement,
+  with bind_parameters: List(Value),
+  expecting decoder: Decoder(a),
+) -> Result(List(a), Error) {
+  use rows <- result.try(do_all(statement, bind_parameters))
+  list.try_map(over: rows, with: fn(row) { decode.run(row, decoder) })
+  |> result.map_error(decode_error)
+}
+
+@external(javascript, "./better_sqlite3_ffi.mjs", "all")
+fn do_all(
+  statement: Statement,
+  with bind_parameters: List(Value),
+) -> Result(List(Dynamic), Error)
+
+@external(javascript, "./better_sqlite3_ffi.mjs", "run")
+pub fn run(
+  statement: Statement,
+  with bind_parameters: List(Value),
+) -> Result(Nil, Error)
+
+fn decode_error(errors: List(decode.DecodeError)) -> Error {
+  let assert [decode.DecodeError(expected, actual, path), ..] = errors
+  let path = case path {
+    [] -> "~NOPATH~"
+    path -> string.join(path, ".")
+  }
+  let message =
+    "Decoder failed, expected "
+    <> expected
+    <> ", got "
+    <> actual
+    <> " in "
+    <> path
+  DecodeError(message: message)
+}
