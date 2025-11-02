@@ -2,7 +2,6 @@ import gleam/dynamic/decode.{type Decoder, type Dynamic}
 import gleam/list
 import gleam/option.{type Option, None}
 import gleam/result
-import gleam/string
 
 pub type Error {
   /// Errors that originate in the JS FFI code. Could be a better-sqlite3 error,
@@ -13,7 +12,7 @@ pub type Error {
   /// used.
   ///
   JsError(name: String, code: String, message: String)
-  DecodeError(message: String)
+  DecodeError(errors: List(decode.DecodeError))
 }
 
 pub type Database
@@ -111,7 +110,7 @@ pub fn all(
 ) -> Result(List(a), Error) {
   use rows <- result.try(do_all(statement, bind_parameters))
   list.try_map(over: rows, with: fn(row) { decode.run(row, decoder) })
-  |> result.map_error(decode_error)
+  |> result.map_error(DecodeError)
 }
 
 @external(javascript, "./better_sqlite3_ffi.mjs", "all")
@@ -138,7 +137,7 @@ pub fn pragma_simple(
   expecting decoder: Decoder(a),
 ) -> Result(a, Error) {
   use value <- result.try(do_pragma_simple(database, sql))
-  decode.run(value, decoder) |> result.map_error(decode_error)
+  decode.run(value, decoder) |> result.map_error(DecodeError)
 }
 
 @external(javascript, "./better_sqlite3_ffi.mjs", "pragma_simple")
@@ -151,7 +150,7 @@ pub fn pragma_all(
 ) -> Result(List(a), Error) {
   use rows <- result.try(do_pragma_all(database, sql))
   list.try_map(over: rows, with: fn(row) { decode.run(row, decoder) })
-  |> result.map_error(decode_error)
+  |> result.map_error(DecodeError)
 }
 
 @external(javascript, "./better_sqlite3_ffi.mjs", "pragma_all")
@@ -159,19 +158,3 @@ fn do_pragma_all(
   database: Database,
   sql: String,
 ) -> Result(List(Dynamic), Error)
-
-fn decode_error(errors: List(decode.DecodeError)) -> Error {
-  let assert [decode.DecodeError(expected, actual, path), ..] = errors
-  let path = case path {
-    [] -> "~NOPATH~"
-    path -> string.join(path, ".")
-  }
-  let message =
-    "Decoder failed, expected "
-    <> expected
-    <> ", got "
-    <> actual
-    <> " in "
-    <> path
-  DecodeError(message: message)
-}
