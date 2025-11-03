@@ -1,6 +1,7 @@
 import better_sqlite3 as sql
 import gleam/dynamic/decode.{type Decoder}
-import gleam/result
+import gleam/io
+import gleam/option.{Some}
 import gleeunit
 import qcheck
 
@@ -231,3 +232,59 @@ pub fn coerce_roundtrip_test() {
 
   let assert Ok(Nil) = sql.close(db)
 }
+
+pub fn database_properties_test() {
+  let assert Ok(db) = sql.new_database(":memory:")
+
+  assert sql.database_open(db) == True
+  assert sql.database_in_transaction(db) == False
+  assert sql.database_name(db) == ":memory:"
+  assert sql.database_memory(db) == True
+  assert sql.database_readonly(db) == False
+
+  let assert Ok(Nil) = sql.close(db)
+}
+
+pub fn verbose_db_test() {
+  let assert Ok(db) =
+    sql.database_builder(":memory:")
+    |> sql.with_verbose(
+      Some(fn(x) { io.println_error("\nVERBOSE DB SAYS: " <> x) }),
+    )
+    |> sql.build()
+
+  let assert Ok(stmt) = sql.prepare(db, "select 1")
+  let assert Ok([row]) =
+    sql.all(stmt, [], decode.field("1", decode.int, decode.success))
+  let assert Ok(Nil) = sql.close(db)
+
+  assert row == 1
+}
+
+pub fn readonly_db_test() {
+  let db_name = temp_db_name()
+  let assert Ok(db) = sql.new_database("/Users/ryan/Desktop/test.db")
+  let assert Ok(Nil) = sql.close(db)
+
+  let assert Ok(db) =
+    sql.database_builder("/Users/ryan/Desktop/test.db")
+    |> sql.with_readonly(True)
+    |> sql.build()
+
+  let assert Error(sql.JsError(
+    name: "SqliteError",
+    code: "SQLITE_READONLY",
+    message: "attempt to write a readonly database",
+  )) = sql.exec(db, "create table users (name text)")
+
+  let assert Ok(Nil) = sql.close(db)
+
+  delete_file_if_exists(db_name)
+}
+
+@external(javascript, "./better_sqlite3_test_ffi.mjs", "temp_db_name")
+fn temp_db_name() -> String
+
+//
+@external(javascript, "./better_sqlite3_test_ffi.mjs", "delete_file_if_exists")
+fn delete_file_if_exists(path: String) -> Nil

@@ -100,6 +100,31 @@ pub fn prepare(database: Database, sql: String) -> Result(Statement, Error)
 @external(javascript, "./better_sqlite3_ffi.mjs", "close")
 pub fn close(database: Database) -> Result(Nil, Error)
 
+// Database properties
+//
+// These are taken from the better-sqlite3 docs
+//
+// .open -> boolean - Whether the database connection is currently open.
+// .inTransaction -> boolean - Whether the database connection is currently in an open transaction.
+// .name -> string - The string that was used to open the database connection.
+// .memory -> boolean - Whether the database is an in-memory or temporary database.
+// .readonly -> boolean - Whether the database connection was created in readonly mode.
+
+@external(javascript, "./better_sqlite3_ffi.mjs", "database_open")
+pub fn database_open(database: Database) -> Bool
+
+@external(javascript, "./better_sqlite3_ffi.mjs", "database_in_transaction")
+pub fn database_in_transaction(database: Database) -> Bool
+
+@external(javascript, "./better_sqlite3_ffi.mjs", "database_name")
+pub fn database_name(database: Database) -> String
+
+@external(javascript, "./better_sqlite3_ffi.mjs", "database_memory")
+pub fn database_memory(database: Database) -> Bool
+
+@external(javascript, "./better_sqlite3_ffi.mjs", "database_readonly")
+pub fn database_readonly(database: Database) -> Bool
+
 // ---------------------------------------------------------------------------
 // Statements ----------------------------------------------------------------
 // ---------------------------------------------------------------------------

@@ -65,7 +65,7 @@ function database_options_from_database_builder(database_builder) {
     options.nativeBinding = Option$Some$0(nativeBinding);
   }
 
-  return opts;
+  return options;
 }
 
 export function exec(database, sql) {
@@ -95,6 +95,28 @@ export function close(database) {
   } catch (error) {
     return convert_error(error);
   }
+}
+
+// DB properties
+
+export function database_open(database) {
+  return database.open;
+}
+
+export function database_in_transaction(database) {
+  return database.inTransaction;
+}
+
+export function database_name(database) {
+  return database.name;
+}
+
+export function database_memory(database) {
+  return database.memory;
+}
+
+export function database_readonly(database) {
+  return database.readonly;
 }
 
 // ---------------------------------------------------------------------------
