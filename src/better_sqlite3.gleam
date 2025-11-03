@@ -153,11 +153,34 @@ fn do_all(
   with bind_parameters: List(Value),
 ) -> Result(List(Dynamic), Error)
 
-@external(javascript, "./better_sqlite3_ffi.mjs", "run")
+pub type RunInfo {
+  RunInfo(changes: Int, last_insert_row_id: Int)
+}
+
+fn run_info_decoder() -> Decoder(RunInfo) {
+  use changes <- decode.field("changes", decode.int)
+  use last_insert_row_id <- decode.field("lastInsertRowid", decode.int)
+  decode.success(RunInfo(changes:, last_insert_row_id:))
+}
+
+/// If this results in a DecodeError, it should be considered as a bug in this
+/// library. If this happens, please open an issue on the GitHub repository.
+/// Thanks!
+///
 pub fn run(
   statement: Statement,
   with bind_parameters: List(Value),
-) -> Result(Nil, Error)
+) -> Result(RunInfo, Error) {
+  use run_info_object <- result.try(do_run(statement, bind_parameters))
+  decode.run(run_info_object, run_info_decoder())
+  |> result.map_error(DecodeError)
+}
+
+@external(javascript, "./better_sqlite3_ffi.mjs", "run")
+fn do_run(
+  statement: Statement,
+  with bind_parameters: List(Value),
+) -> Result(Dynamic, Error)
 
 /// Will return an `Error` if you call it on a statement that doesn't return data.
 ///

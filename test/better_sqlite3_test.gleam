@@ -48,7 +48,7 @@ pub fn basic_usage_test() {
   let assert Ok(insert_statement) =
     sql.prepare(db, "INSERT INTO users (name, age) VALUES (?, ?)")
 
-  let assert Ok(Nil) =
+  let assert Ok(sql.RunInfo(changes: 1, last_insert_row_id: 1)) =
     sql.run(insert_statement, [sql.text("Alice"), sql.int(30)])
 
   let assert Ok(all_users_statement) = sql.prepare(db, "SELECT * FROM users")
@@ -75,7 +75,7 @@ pub fn bad_decoder_test() {
   let assert Ok(insert_statement) =
     sql.prepare(db, "INSERT INTO users (name, age) VALUES (?, ?)")
 
-  let assert Ok(Nil) =
+  let assert Ok(sql.RunInfo(changes: 1, last_insert_row_id: 1)) =
     sql.run(insert_statement, [sql.text("Alice"), sql.int(30)])
 
   let assert Ok(all_users_statement) = sql.prepare(db, "SELECT * FROM users")
@@ -137,27 +137,47 @@ pub fn pragma_foreign_key_test() {
 
 pub fn kitchen_sink_test() {
   let user_decoder = {
+    use id <- decode.field("id", decode.int)
     use name <- decode.field("name", decode.string)
     use age <- decode.field("age", decode.int)
-    decode.success(#(name, age))
+    decode.success(#(id, name, age))
   }
   let raw_user_decoder = {
-    use name <- decode.field(0, decode.string)
-    use age <- decode.field(1, decode.int)
-    decode.success(#(name, age))
+    use id <- decode.field(0, decode.int)
+    use name <- decode.field(1, decode.string)
+    use age <- decode.field(2, decode.int)
+    decode.success(#(id, name, age))
   }
 
   let assert Ok(db) = sql.new_database(":memory:")
 
   let assert Ok(create_users_table) =
-    sql.prepare(db, "create table users (name text, age int)")
-  let assert Ok(Nil) = sql.run(create_users_table, [])
+    sql.prepare(
+      db,
+      "create table users (id integer primary key, name text, age int)",
+    )
+  let assert Ok(_) = sql.run(create_users_table, [])
 
+  // You can use db exec directly to insert users, but you probably shouldn't
+  // since you can't get the rowid back....
+  let assert Ok(Nil) =
+    sql.exec(db, "insert into users (name, age) values ('Ash', 29)")
+
+  // Inserting users with statement.run
   let assert Ok(insert_user) =
     sql.prepare(db, "insert into users (name, age) values (?, ?)")
-  let assert Ok(Nil) = sql.run(insert_user, [sql.text("Ash"), sql.int(29)])
-  let assert Ok(Nil) = sql.run(insert_user, [sql.text("Misty"), sql.int(31)])
-  let assert Ok(Nil) = sql.run(insert_user, [sql.text("Brock"), sql.int(35)])
+  let assert Ok(sql.RunInfo(changes: 1, last_insert_row_id: 2)) =
+    sql.run(insert_user, [sql.text("Misty"), sql.int(31)])
+
+  // Inserting users while returning values
+  let assert Ok(insert_user_returning) =
+    sql.prepare(db, "insert into users (name, age) values (?, ?) returning *")
+  let assert Ok([#(3, "Brock", 35)]) =
+    sql.all(
+      insert_user_returning,
+      [sql.text("Brock"), sql.int(35)],
+      user_decoder,
+    )
 
   let assert Ok(select) = sql.prepare(db, "select * from users where age > ?")
 
@@ -165,13 +185,22 @@ pub fn kitchen_sink_test() {
   // it.
   let assert Ok(select) = sql.raw(select, True)
   let assert Ok(users) = sql.all(select, [sql.int(30)], raw_user_decoder)
-  assert users == [#("Misty", 31), #("Brock", 35)]
+  assert users == [#(2, "Misty", 31), #(3, "Brock", 35)]
 
   // Switching back to non-raw causes the statement to return JS objects
   // instead.
   let assert Ok(select) = sql.raw(select, False)
   let assert Ok(users) = sql.all(select, [sql.int(30)], user_decoder)
-  assert users == [#("Misty", 31), #("Brock", 35)]
+  assert users == [#(2, "Misty", 31), #(3, "Brock", 35)]
+
+  // Counting rows
+  let assert Ok(count_users) = sql.prepare(db, "select count(*) from users")
+  let assert Ok([3]) =
+    sql.all(
+      count_users,
+      [],
+      decode.field("count(*)", decode.int, decode.success),
+    )
 
   let assert Ok(Nil) = sql.close(db)
 }
@@ -180,7 +209,7 @@ pub fn raw_cannot_be_called_on_a_statement_that_doesnt_return_data_test() {
   let assert Ok(db) = sql.new_database(":memory:")
   let assert Ok(create_users_table) =
     sql.prepare(db, "create table users (name text, age int)")
-  let assert Ok(Nil) = sql.run(create_users_table, [])
+  let assert Ok(_) = sql.run(create_users_table, [])
   let assert Ok(insert_user) =
     sql.prepare(db, "insert into users (name, age) values (?, ?)")
 

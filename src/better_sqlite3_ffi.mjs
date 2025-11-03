@@ -83,7 +83,6 @@ export function exec(database, sql) {
 
 export function prepare(database, sql) {
   try {
-    // TODO: I'm not sure if this method can actually fail?
     const statement = database.prepare(sql);
     return Result$Ok(statement);
   } catch (error) {
@@ -128,9 +127,8 @@ export function database_readonly(database) {
 
 export function run(statement, bind_parameters) {
   try {
-    const result = statement.run(bind_parameters.toArray());
-    // TODO: return the real object
-    return Result$Ok(undefined);
+    const info = statement.run(bind_parameters.toArray());
+    return Result$Ok(info);
   } catch (error) {
     return convert_error(error);
   }
