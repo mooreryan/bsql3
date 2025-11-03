@@ -81,7 +81,7 @@ pub fn bad_decoder_test() {
 pub fn db_close_test() {
   let assert Ok(db) = sql.new_database(":memory:")
   let assert Ok(Nil) = sql.close(db)
-  let assert Error(sql.JsError(_, _, _)) = sql.exec(db, "SELECT 1")
+  let assert Error(sql.JsError(_, _)) = sql.exec(db, "SELECT 1")
 }
 
 /// The following actions give an error:
@@ -97,7 +97,6 @@ pub fn db_close_prepared_statement_test() {
   let assert Ok(Nil) = sql.close(db)
   let assert Error(sql.JsError(
     name: "TypeError",
-    code: _,
     message: "The database connection is not open",
   )) = sql.all(stmt, [], decode.field("1", decode.int, decode.success))
 }
@@ -113,8 +112,7 @@ pub fn pragma_foreign_key_test() {
       "CREATE TABLE users (id INTEGER PRIMARY KEY);"
         <> "CREATE TABLE posts (id INTEGER PRIMARY KEY, user_id INTEGER, FOREIGN KEY (user_id) REFERENCES users(id));",
     )
-  let assert Error(sql.JsError(
-    name: "SqliteError",
+  let assert Error(sql.SqliteError(
     code: "SQLITE_CONSTRAINT_FOREIGNKEY",
     message: "FOREIGN KEY constraint failed",
   )) = sql.exec(db, "INSERT INTO posts (user_id) VALUES (1234)")
@@ -178,7 +176,6 @@ pub fn raw_cannot_be_called_on_a_statement_that_doesnt_return_data_test() {
 
   let assert Error(sql.JsError(
     name: "TypeError",
-    code: _,
     message: "The raw() method is only for statements that return data",
   )) = sql.raw(insert_user, True)
 
@@ -271,8 +268,7 @@ pub fn readonly_db_test() {
     |> sql.with_readonly(True)
     |> sql.build()
 
-  let assert Error(sql.JsError(
-    name: "SqliteError",
+  let assert Error(sql.SqliteError(
     code: "SQLITE_READONLY",
     message: "attempt to write a readonly database",
   )) = sql.exec(db, "create table users (name text)")

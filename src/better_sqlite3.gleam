@@ -4,14 +4,19 @@ import gleam/option.{type Option, None, Some}
 import gleam/result
 
 pub type Error {
-  /// Errors that originate in the JS FFI code. Could be a better-sqlite3 error,
-  /// could be a regular JS error, etc. The `code` will often be sqlite3 error
-  /// codes as returned by the better-sqlite3 package.
+  /// Errors that originate in the JS FFI code, but that are not sqlite errors.
   ///
   /// If any of the fields are not present in the error, `"~UNKNOWN~"` will be
   /// used.
   ///
-  JsError(name: String, code: String, message: String)
+  JsError(name: String, message: String)
+
+  /// Also originates from the JS FFI code, but specific to sqlite errors.
+  ///
+  SqliteError(code: String, message: String)
+
+  /// Decoding errors. If you get one of these, you need to fix your decoder.
+  ///
   DecodeError(errors: List(decode.DecodeError))
 }
 

@@ -11,6 +11,7 @@ import {
 
 import {
   Error$JsError,
+  Error$SqliteError,
   DatabaseBuilder$DatabaseBuilder$path,
   DatabaseBuilder$DatabaseBuilder$readonly,
   DatabaseBuilder$DatabaseBuilder$file_must_exist,
@@ -225,11 +226,13 @@ export function coerce_blob(value) {
 // ---------------------------------------------------------------------------
 
 function convert_error(error) {
-  return Result$Error(
-    Error$JsError(
-      error.name || "~UNKNOWN~",
-      error.code || "~UNKNOWN~",
-      error.message || "~UNKNOWN~",
-    ),
-  );
+  if (error.code) {
+    return Result$Error(
+      Error$SqliteError(error.code, error.message || "~UNKNOWN~"),
+    );
+  } else {
+    return Result$Error(
+      Error$JsError(error.name || "~UNKNOWN~", error.message || "~UNKNOWN~"),
+    );
+  }
 }
