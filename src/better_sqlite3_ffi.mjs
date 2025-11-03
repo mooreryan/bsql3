@@ -20,6 +20,8 @@ import {
   DatabaseBuilder$DatabaseBuilder$native_binding,
 } from "./better_sqlite3.mjs";
 
+import { from_string as result_code_from_string } from "./better_sqlite3/result_code.mjs";
+
 import Database from "better-sqlite3";
 
 // ---------------------------------------------------------------------------
@@ -227,8 +229,10 @@ export function coerce_blob(value) {
 
 function convert_error(error) {
   if (error.code) {
+    const result_code = result_code_from_string(error.code);
+
     return Result$Error(
-      Error$SqliteError(error.code, error.message || "~UNKNOWN~"),
+      Error$SqliteError(result_code, error.message || "~UNKNOWN~"),
     );
   } else {
     return Result$Error(

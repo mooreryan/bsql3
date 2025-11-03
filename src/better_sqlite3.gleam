@@ -1,3 +1,4 @@
+import better_sqlite3/result_code.{type ResultCode}
 import gleam/dynamic/decode.{type Decoder, type Dynamic}
 import gleam/list
 import gleam/option.{type Option, None, Some}
@@ -13,7 +14,7 @@ pub type Error {
 
   /// Also originates from the JS FFI code, but specific to sqlite errors.
   ///
-  SqliteError(code: String, message: String)
+  SqliteError(code: ResultCode, message: String)
 
   /// Decoding errors. If you get one of these, you need to fix your decoder.
   ///

@@ -1,4 +1,5 @@
 import better_sqlite3 as sql
+import better_sqlite3/result_code
 import gleam/dynamic/decode.{type Decoder}
 import gleam/io
 import gleam/option.{Some}
@@ -12,7 +13,7 @@ pub fn main() -> Nil {
 pub fn syntax_error_test() {
   let assert Ok(db) = sql.new_database(":memory:")
 
-  let assert Error(sql.SqliteError(code: "SQLITE_ERROR", message: _)) =
+  let assert Error(sql.SqliteError(code: result_code.SqliteError, message: _)) =
     sql.exec(db, "this won't work!")
 
   let assert Ok(Nil) = sql.close(db)
@@ -122,7 +123,7 @@ pub fn pragma_foreign_key_test() {
         <> "CREATE TABLE posts (id INTEGER PRIMARY KEY, user_id INTEGER, FOREIGN KEY (user_id) REFERENCES users(id));",
     )
   let assert Error(sql.SqliteError(
-    code: "SQLITE_CONSTRAINT_FOREIGNKEY",
+    code: result_code.SqliteConstraintForeignkey,
     message: "FOREIGN KEY constraint failed",
   )) = sql.exec(db, "INSERT INTO posts (user_id) VALUES (1234)")
 
@@ -278,7 +279,7 @@ pub fn readonly_db_test() {
     |> sql.build()
 
   let assert Error(sql.SqliteError(
-    code: "SQLITE_READONLY",
+    code: result_code.SqliteReadonly,
     message: "attempt to write a readonly database",
   )) = sql.exec(db, "create table users (name text)")
 
