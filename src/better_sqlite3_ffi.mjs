@@ -21,6 +21,10 @@ import {
 
 import Database from "better-sqlite3";
 
+// ---------------------------------------------------------------------------
+// Databatse connections -----------------------------------------------------
+// ---------------------------------------------------------------------------
+
 export function new_database(path) {
   try {
     const database = new Database(path);
@@ -84,6 +88,19 @@ export function prepare(database, sql) {
   }
 }
 
+export function close(database) {
+  try {
+    database.close();
+    return Result$Ok(undefined);
+  } catch (error) {
+    return convert_error(error);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Statements ----------------------------------------------------------------
+// ---------------------------------------------------------------------------
+
 export function run(statement, bind_parameters) {
   try {
     const result = statement.run(bind_parameters.toArray());
@@ -103,18 +120,22 @@ export function all(statement, bind_parameters) {
   }
 }
 
-export function coerce(value) {
-  return value;
-}
-
-export function close(database) {
+export function raw(statement, toggle_raw) {
   try {
-    database.close();
-    return Result$Ok(undefined);
+    // Raw will throw type errors if it is called on statements that don't
+    // return data.
+    //
+    // See better-sqlite3 -> statement.cpp -> Statement::JS_raw
+    const stmt = statement.raw(toggle_raw);
+    return Result$Ok(stmt);
   } catch (error) {
     return convert_error(error);
   }
 }
+
+// ---------------------------------------------------------------------------
+// Pragmas -------------------------------------------------------------------
+// ---------------------------------------------------------------------------
 
 export function pragma(database, sql) {
   try {
@@ -144,10 +165,26 @@ export function pragma_all(database, sql) {
 }
 
 // ---------------------------------------------------------------------------
+// Values --------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+
+export function null_() {
+  return undefined;
+}
+
+export function coerce(value) {
+  return value;
+}
+
+export function coerce_blob(value) {
+  return value.buffer;
+}
+
+// ---------------------------------------------------------------------------
 // Utils ---------------------------------------------------------------------
 // ---------------------------------------------------------------------------
 
-export function convert_error(error) {
+function convert_error(error) {
   return Result$Error(
     Error$JsError(
       error.name || "~UNKNOWN~",

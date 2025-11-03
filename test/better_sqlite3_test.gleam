@@ -1,5 +1,6 @@
 import better_sqlite3 as sql
 import gleam/dynamic/decode.{type Decoder}
+import gleam/result
 import gleeunit
 
 pub fn main() -> Nil {
@@ -36,7 +37,7 @@ pub fn basic_usage_test() {
     sql.prepare(db, "INSERT INTO users (name, age) VALUES (?, ?)")
 
   let assert Ok(Nil) =
-    sql.run(insert_statement, [sql.coerce_string("Alice"), sql.coerce_int(30)])
+    sql.run(insert_statement, [sql.text("Alice"), sql.int(30)])
 
   let assert Ok(all_users_statement) = sql.prepare(db, "SELECT * FROM users")
 
@@ -63,7 +64,7 @@ pub fn bad_decoder_test() {
     sql.prepare(db, "INSERT INTO users (name, age) VALUES (?, ?)")
 
   let assert Ok(Nil) =
-    sql.run(insert_statement, [sql.coerce_string("Alice"), sql.coerce_int(30)])
+    sql.run(insert_statement, [sql.text("Alice"), sql.int(30)])
 
   let assert Ok(all_users_statement) = sql.prepare(db, "SELECT * FROM users")
 
@@ -104,4 +105,104 @@ pub fn pragma_foreign_key_test() {
   let assert Ok(Nil) = sql.exec(db, "INSERT INTO posts (user_id) VALUES (1234)")
 
   let assert Ok(Nil) = sql.close(db)
+}
+
+pub fn x_test() {
+  // let assert Ok([1234]) = {
+  //   use db <- sql.with_database(":memory:")
+  //   use stmt <- result.try(sql.prepare(db, "select ?"))
+  //   sql.all(stmt, [sql.int(1234)], decode.int)
+  // }
+  //
+  // let assert Ok([1234]) = {
+  //   use db <- sql.with_database(":memory:")
+  //   use stmt <- result.try(sql.prepare(db, "select 1234"))
+  //   sql.all(stmt, [], decode.field(0, decode.int, decode.success))
+  // }
+
+  let assert Ok(db) = sql.new_database(":memory:")
+  let assert Ok(stmt) = sql.prepare(db, "select 1234")
+
+  let assert Ok([1234]) =
+    // If you're reading this code expecting the decoder to look like those from
+    // the sqlight library, don't be alarmed that they are different. The
+    // underlying libraries behave differently.
+    sql.all(stmt, [], decode.field("1234", decode.int, decode.success))
+}
+
+pub fn the_full_experience_test() {
+  use db <- sql.with_database(":memory:")
+  use create <- result.try(sql.prepare(db, "create table users (name text)"))
+  use Nil <- result.try(sql.run(create, []))
+  use insert <- result.try(sql.prepare(
+    db,
+    "insert into users (name) values (?)",
+  ))
+  use Nil <- result.try(sql.run(insert, [sql.text("Ash")]))
+  use Nil <- result.try(sql.run(insert, [sql.text("Misty")]))
+  use select_all <- result.try(sql.prepare(db, "select * from users"))
+  use users <- result.try(sql.all(
+    select_all,
+    [],
+    decode.field("name", decode.string, decode.success),
+  ))
+
+  assert users == ["Ash", "Misty"]
+  Ok(Nil)
+}
+
+pub fn kitchen_sink_test() {
+  let user_decoder = {
+    use name <- decode.field("name", decode.string)
+    use age <- decode.field("age", decode.int)
+    decode.success(#(name, age))
+  }
+  let raw_user_decoder = {
+    use name <- decode.field(0, decode.string)
+    use age <- decode.field(1, decode.int)
+    decode.success(#(name, age))
+  }
+
+  let assert Ok(db) = sql.new_database(":memory:")
+
+  let assert Ok(create_users_table) =
+    sql.prepare(db, "create table users (name text, age int)")
+  let assert Ok(Nil) = sql.run(create_users_table, [])
+
+  let assert Ok(insert_user) =
+    sql.prepare(db, "insert into users (name, age) values (?, ?)")
+  let assert Ok(Nil) = sql.run(insert_user, [sql.text("Ash"), sql.int(29)])
+  let assert Ok(Nil) = sql.run(insert_user, [sql.text("Misty"), sql.int(31)])
+  let assert Ok(Nil) = sql.run(insert_user, [sql.text("Brock"), sql.int(35)])
+
+  let assert Ok(select) = sql.prepare(db, "select * from users where age > ?")
+
+  // Raw returns JS arrays rather than objects, but you must explicitly opt into
+  // it.
+  let assert Ok(select) = sql.raw(select, True)
+  let assert Ok(users) = sql.all(select, [sql.int(30)], raw_user_decoder)
+  assert users == [#("Misty", 31), #("Brock", 35)]
+
+  // Switching back to non-raw causes the statement to return JS objects
+  // instead.
+  let assert Ok(select) = sql.raw(select, False)
+  let assert Ok(users) = sql.all(select, [sql.int(30)], user_decoder)
+  assert users == [#("Misty", 31), #("Brock", 35)]
+
+  let assert Ok(Nil) = sql.close(db)
+}
+
+pub fn raw_cannot_be_called_on_a_statement_that_doesnt_return_data_test() {
+  let assert Ok(db) = sql.new_database(":memory:")
+  let assert Ok(create_users_table) =
+    sql.prepare(db, "create table users (name text, age int)")
+  let assert Ok(Nil) = sql.run(create_users_table, [])
+  let assert Ok(insert_user) =
+    sql.prepare(db, "insert into users (name, age) values (?, ?)")
+
+  let assert Error(sql.JsError(
+    name: "TypeError",
+    code: _,
+    message: "The raw() method is only for statements that return data",
+  )) = sql.raw(insert_user, True)
 }

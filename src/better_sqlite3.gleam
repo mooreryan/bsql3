@@ -1,6 +1,6 @@
 import gleam/dynamic/decode.{type Decoder, type Dynamic}
 import gleam/list
-import gleam/option.{type Option, None}
+import gleam/option.{type Option, None, Some}
 import gleam/result
 
 pub type Error {
@@ -15,9 +15,11 @@ pub type Error {
   DecodeError(errors: List(decode.DecodeError))
 }
 
-pub type Database
+// ---------------------------------------------------------------------------
+// Databatse connections -----------------------------------------------------
+// ---------------------------------------------------------------------------
 
-pub type Statement
+pub type Database
 
 pub type DatabaseBuilder {
   DatabaseBuilder(
@@ -32,6 +34,17 @@ pub type DatabaseBuilder {
 
 @external(javascript, "./better_sqlite3_ffi.mjs", "new_database")
 pub fn new_database(path: String) -> Result(Database, Error)
+
+pub fn with_database(
+  path: String,
+  f: fn(Database) -> Result(a, Error),
+) -> Result(a, Error) {
+  use database <- result.try(new_database(path))
+  use value <- result.try(f(database))
+  // TODO: this won't actually get called if the inner function fails.
+  use Nil <- result.try(close(database))
+  Ok(value)
+}
 
 pub fn database_builder(path: String) -> DatabaseBuilder {
   DatabaseBuilder(
@@ -95,13 +108,14 @@ pub fn exec(database: Database, sql: String) -> Result(Nil, Error)
 @external(javascript, "./better_sqlite3_ffi.mjs", "prepare")
 pub fn prepare(database: Database, sql: String) -> Result(Statement, Error)
 
-pub type Value
+@external(javascript, "./better_sqlite3_ffi.mjs", "close")
+pub fn close(database: Database) -> Result(Nil, Error)
 
-@external(javascript, "./better_sqlite3_ffi.mjs", "coerce")
-pub fn coerce_string(value: String) -> Value
+// ---------------------------------------------------------------------------
+// Statements ----------------------------------------------------------------
+// ---------------------------------------------------------------------------
 
-@external(javascript, "./better_sqlite3_ffi.mjs", "coerce")
-pub fn coerce_int(value: Int) -> Value
+pub type Statement
 
 pub fn all(
   statement: Statement,
@@ -125,8 +139,14 @@ pub fn run(
   with bind_parameters: List(Value),
 ) -> Result(Nil, Error)
 
-@external(javascript, "./better_sqlite3_ffi.mjs", "close")
-pub fn close(database: Database) -> Result(Nil, Error)
+/// Will return an `Error` if you call it on a statement that doesn't return data.
+///
+@external(javascript, "./better_sqlite3_ffi.mjs", "raw")
+pub fn raw(statement: Statement, toggle_raw: Bool) -> Result(Statement, Error)
+
+// ---------------------------------------------------------------------------
+// Pragmas -------------------------------------------------------------------
+// ---------------------------------------------------------------------------
 
 @external(javascript, "./better_sqlite3_ffi.mjs", "pragma")
 pub fn pragma(database: Database, sql: String) -> Result(Nil, Error)
@@ -158,3 +178,77 @@ fn do_pragma_all(
   database: Database,
   sql: String,
 ) -> Result(List(Dynamic), Error)
+
+// ---------------------------------------------------------------------------
+// Values --------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+
+pub type Value
+
+@external(javascript, "./better_sqlite3_ffi.mjs", "coerce")
+fn coerce(a: a) -> Value
+
+/// Convert a Gleam `Option` to an SQLite nullable value for use as a bind
+/// parameter.
+///
+pub fn nullable(coerce: fn(a) -> Value, value: Option(a)) -> Value {
+  case value {
+    Some(value) -> coerce(value)
+    None -> null()
+  }
+}
+
+/// Convert a Gleam `Int` to an SQLite int for use as a bind parameter.
+///
+pub fn int(value: Int) -> Value {
+  coerce(value)
+}
+
+/// Convert a Gleam `Float` to an SQLite float for use as a bind parameter.
+///
+pub fn float(value: Float) -> Value {
+  coerce(value)
+}
+
+/// Convert a Gleam `String` to an SQLite text for use as a bind parameter.
+///
+pub fn text(value: String) -> Value {
+  coerce(value)
+}
+
+/// Convert a Gleam `BitString` to an SQLite blob for use as a bind parameter.
+///
+@external(javascript, "./better_sqlite3_ffi.mjs", "coerce_blob")
+pub fn blob(value: BitArray) -> Value
+
+/// Convert a Gleam `Bool` to an SQLite int for use as a bind parameter.
+///
+/// SQLite does not have a native boolean type. Instead, it uses ints, where 0
+/// is False and 1 is True. Because of this the Gleam stdlib decoder for bools
+/// will not work, instead the `decode_bool` function should be used as it
+/// supports both ints and bools.
+///
+pub fn bool(value: Bool) -> Value {
+  case value {
+    True -> int(1)
+    False -> int(0)
+  }
+}
+
+/// Construct an SQLite null for use as a bind parameter.
+///
+@external(javascript, "./better_sqlite3_ffi.mjs", "null_")
+pub fn null() -> Value
+
+/// Decode an SQLite boolean value.
+///
+/// Decodes 0 as `False` and any other integer as `True`.
+///
+pub fn decode_bool() -> Decoder(Bool) {
+  use bool <- decode.then(decode.int)
+
+  case bool {
+    0 -> decode.success(False)
+    _ -> decode.success(True)
+  }
+}

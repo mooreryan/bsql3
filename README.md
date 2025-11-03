@@ -1,3 +1,5 @@
+- [ ] Deprecated BitArray.buffer property used in JavaScript FFI code. Use BitArray.byteAt() or BitArray.rawBuffer instead.
+
 # better_sqlite3
 
 [![Package Version](https://img.shields.io/hexpm/v/better_sqlite3)](https://hex.pm/packages/better_sqlite3)
@@ -6,6 +8,7 @@
 ```sh
 gleam add better_sqlite3@1
 ```
+
 ```gleam
 import better_sqlite3
 
