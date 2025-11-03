@@ -177,7 +177,7 @@ export function coerce(value) {
 }
 
 export function coerce_blob(value) {
-  return value.buffer;
+  return value.rawBuffer;
 }
 
 // ---------------------------------------------------------------------------

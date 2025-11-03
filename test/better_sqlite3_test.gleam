@@ -2,6 +2,7 @@ import better_sqlite3 as sql
 import gleam/dynamic/decode.{type Decoder}
 import gleam/result
 import gleeunit
+import qcheck
 
 pub fn main() -> Nil {
   gleeunit.main()
@@ -205,4 +206,54 @@ pub fn raw_cannot_be_called_on_a_statement_that_doesnt_return_data_test() {
     code: _,
     message: "The raw() method is only for statements that return data",
   )) = sql.raw(insert_user, True)
+
+  let assert Ok(Nil) = sql.close(db)
+}
+
+pub fn coerce_roundtrip_test() {
+  let generator = {
+    use an_int, a_float, a_bool, some_text, a_blob <- qcheck.map5(
+      qcheck.uniform_int(),
+      qcheck.float(),
+      qcheck.bool(),
+      qcheck.string(),
+      // Non byte-aligned bit arrays don't always round trip in JS due to the
+      // way the decoder works.
+      qcheck.byte_aligned_bit_array(),
+    )
+    #(an_int, a_float, a_bool, some_text, a_blob)
+  }
+
+  let decoder = {
+    use an_int <- decode.field(0, decode.int)
+    use a_float <- decode.field(1, decode.float)
+    use a_bool <- decode.field(2, sql.decode_bool())
+    use some_text <- decode.field(3, decode.string)
+    use a_blob <- decode.field(4, decode.bit_array)
+    decode.success(#(an_int, a_float, a_bool, some_text, a_blob))
+  }
+
+  let assert Ok(db) = sql.new_database(":memory:")
+  let assert Ok(stmt) = sql.prepare(db, "select ?, ?, ?, ?, ?")
+  let assert Ok(stmt) = sql.raw(stmt, True)
+
+  let Nil = {
+    use #(an_int, a_float, a_bool, some_text, a_blob) <- qcheck.given(generator)
+    let assert Ok([row]) =
+      sql.all(
+        stmt,
+        [
+          sql.int(an_int),
+          sql.float(a_float),
+          sql.bool(a_bool),
+          sql.text(some_text),
+          sql.blob(a_blob),
+        ],
+        decoder,
+      )
+
+    assert row == #(an_int, a_float, a_bool, some_text, a_blob)
+  }
+
+  let assert Ok(Nil) = sql.close(db)
 }
