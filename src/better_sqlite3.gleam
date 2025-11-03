@@ -35,17 +35,6 @@ pub type DatabaseBuilder {
 @external(javascript, "./better_sqlite3_ffi.mjs", "new_database")
 pub fn new_database(path: String) -> Result(Database, Error)
 
-pub fn with_database(
-  path: String,
-  f: fn(Database) -> Result(a, Error),
-) -> Result(a, Error) {
-  use database <- result.try(new_database(path))
-  use value <- result.try(f(database))
-  // TODO: this won't actually get called if the inner function fails.
-  use Nil <- result.try(close(database))
-  Ok(value)
-}
-
 pub fn database_builder(path: String) -> DatabaseBuilder {
   DatabaseBuilder(
     path:,

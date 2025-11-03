@@ -83,6 +83,24 @@ pub fn db_close_test() {
   let assert Error(sql.JsError(_, _, _)) = sql.exec(db, "SELECT 1")
 }
 
+/// The following actions give an error:
+///
+/// 1. Create DB
+/// 2. Prepare a statement on that DB
+/// 3. Close the DB connection
+/// 4. Try to run/exec the prepared statement
+///
+pub fn db_close_prepared_statement_test() {
+  let assert Ok(db) = sql.new_database(":memory:")
+  let assert Ok(stmt) = sql.prepare(db, "select 1")
+  let assert Ok(Nil) = sql.close(db)
+  let assert Error(sql.JsError(
+    name: "TypeError",
+    code: _,
+    message: "The database connection is not open",
+  )) = sql.all(stmt, [], decode.field("1", decode.int, decode.success))
+}
+
 /// Pragmas work, like setting foreign key constraints.
 ///
 pub fn pragma_foreign_key_test() {
@@ -106,50 +124,6 @@ pub fn pragma_foreign_key_test() {
   let assert Ok(Nil) = sql.exec(db, "INSERT INTO posts (user_id) VALUES (1234)")
 
   let assert Ok(Nil) = sql.close(db)
-}
-
-pub fn x_test() {
-  // let assert Ok([1234]) = {
-  //   use db <- sql.with_database(":memory:")
-  //   use stmt <- result.try(sql.prepare(db, "select ?"))
-  //   sql.all(stmt, [sql.int(1234)], decode.int)
-  // }
-  //
-  // let assert Ok([1234]) = {
-  //   use db <- sql.with_database(":memory:")
-  //   use stmt <- result.try(sql.prepare(db, "select 1234"))
-  //   sql.all(stmt, [], decode.field(0, decode.int, decode.success))
-  // }
-
-  let assert Ok(db) = sql.new_database(":memory:")
-  let assert Ok(stmt) = sql.prepare(db, "select 1234")
-
-  let assert Ok([1234]) =
-    // If you're reading this code expecting the decoder to look like those from
-    // the sqlight library, don't be alarmed that they are different. The
-    // underlying libraries behave differently.
-    sql.all(stmt, [], decode.field("1234", decode.int, decode.success))
-}
-
-pub fn the_full_experience_test() {
-  use db <- sql.with_database(":memory:")
-  use create <- result.try(sql.prepare(db, "create table users (name text)"))
-  use Nil <- result.try(sql.run(create, []))
-  use insert <- result.try(sql.prepare(
-    db,
-    "insert into users (name) values (?)",
-  ))
-  use Nil <- result.try(sql.run(insert, [sql.text("Ash")]))
-  use Nil <- result.try(sql.run(insert, [sql.text("Misty")]))
-  use select_all <- result.try(sql.prepare(db, "select * from users"))
-  use users <- result.try(sql.all(
-    select_all,
-    [],
-    decode.field("name", decode.string, decode.success),
-  ))
-
-  assert users == ["Ash", "Misty"]
-  Ok(Nil)
 }
 
 pub fn kitchen_sink_test() {
