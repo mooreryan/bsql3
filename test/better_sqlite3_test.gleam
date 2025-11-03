@@ -9,6 +9,15 @@ pub fn main() -> Nil {
   gleeunit.main()
 }
 
+pub fn syntax_error_test() {
+  let assert Ok(db) = sql.new_database(":memory:")
+
+  let assert Error(sql.SqliteError(code: "SQLITE_ERROR", message: _)) =
+    sql.exec(db, "this won't work!")
+
+  let assert Ok(Nil) = sql.close(db)
+}
+
 type User {
   User(id: Int, name: String, age: Int)
 }
