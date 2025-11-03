@@ -288,3 +288,15 @@ fn temp_db_name() -> String
 //
 @external(javascript, "./better_sqlite3_test_ffi.mjs", "delete_file_if_exists")
 fn delete_file_if_exists(path: String) -> Nil
+
+pub fn statement_properties_test() {
+  let assert Ok(db) = sql.new_database(":memory:")
+  let assert Ok(stmt) = sql.prepare(db, "select 1")
+
+  assert sql.statement_database(stmt) == db
+  assert sql.statement_source(stmt) == "select 1"
+  assert sql.statement_reader(stmt) == True
+  assert sql.statement_readonly(stmt) == True
+
+  let assert Ok(Nil) = sql.close(db)
+}

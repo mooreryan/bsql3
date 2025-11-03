@@ -155,6 +155,24 @@ export function raw(statement, toggle_raw) {
   }
 }
 
+// DB properties
+
+export function statement_database(statement) {
+  return statement.database;
+}
+
+export function statement_source(statement) {
+  return statement.source;
+}
+
+export function statement_reader(statement) {
+  return statement.reader;
+}
+
+export function statement_readonly(statement) {
+  return statement.readonly;
+}
+
 // ---------------------------------------------------------------------------
 // Pragmas -------------------------------------------------------------------
 // ---------------------------------------------------------------------------

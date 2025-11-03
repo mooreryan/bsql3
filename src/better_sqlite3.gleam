@@ -158,6 +158,20 @@ pub fn run(
 @external(javascript, "./better_sqlite3_ffi.mjs", "raw")
 pub fn raw(statement: Statement, toggle_raw: Bool) -> Result(Statement, Error)
 
+// Statement properties
+
+@external(javascript, "./better_sqlite3_ffi.mjs", "statement_database")
+pub fn statement_database(statement: Statement) -> Database
+
+@external(javascript, "./better_sqlite3_ffi.mjs", "statement_source")
+pub fn statement_source(statement: Statement) -> String
+
+@external(javascript, "./better_sqlite3_ffi.mjs", "statement_reader")
+pub fn statement_reader(statement: Statement) -> Bool
+
+@external(javascript, "./better_sqlite3_ffi.mjs", "statement_readonly")
+pub fn statement_readonly(statement: Statement) -> Bool
+
 // ---------------------------------------------------------------------------
 // Pragmas -------------------------------------------------------------------
 // ---------------------------------------------------------------------------
