@@ -1,13 +1,5 @@
-// import { Result$Ok, Result$Error, Option$Some, Option$None } from "./gleam.mjs";
 import { List, Result$Ok, Result$Error } from "./gleam.mjs";
-import * as $option from "../gleam_stdlib/gleam/option.mjs";
-import {
-  Option$None,
-  Option$isNone,
-  Option$Some,
-  Option$isSome,
-  Option$Some$0,
-} from "../gleam_stdlib/gleam/option.mjs";
+import { Option$isSome, Option$Some$0 } from "../gleam_stdlib/gleam/option.mjs";
 
 import {
   Error$JsError,
@@ -138,6 +130,15 @@ export function all(statement, bind_parameters) {
   try {
     const rows = statement.all(bind_parameters.toArray());
     return Result$Ok(List.fromArray(rows));
+  } catch (error) {
+    return convert_error(error);
+  }
+}
+
+export function get(statement, bind_parameters) {
+  try {
+    const row = statement.get(bind_parameters.toArray());
+    return Result$Ok(row);
   } catch (error) {
     return convert_error(error);
   }

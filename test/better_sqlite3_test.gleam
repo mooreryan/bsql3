@@ -2,7 +2,7 @@ import better_sqlite3 as sql
 import better_sqlite3/result_code
 import gleam/dynamic/decode.{type Decoder}
 import gleam/io
-import gleam/option.{Some}
+import gleam/option.{None, Some}
 import gleeunit
 import qcheck
 
@@ -193,6 +193,10 @@ pub fn kitchen_sink_test() {
   let assert Ok(users) = sql.all(select, [sql.int(30)], user_decoder)
   assert users == [#(2, "Misty", 31), #(3, "Brock", 35)]
 
+  let assert Ok(Some(#(2, "Misty", 31))) =
+    sql.get(select, [sql.int(30)], user_decoder)
+  let assert Ok(None) = sql.get(select, [sql.int(50)], user_decoder)
+
   // Counting rows
   let assert Ok(count_users) = sql.prepare(db, "select count(*) from users")
   let assert Ok([3]) =
@@ -262,7 +266,21 @@ pub fn coerce_roundtrip_test() {
         ],
         decoder,
       )
+    assert row == #(an_int, a_float, a_bool, some_text, a_blob)
 
+    // Check `get` as well
+    let assert Ok(Some(row)) =
+      sql.get(
+        stmt,
+        [
+          sql.nullable(sql.int, an_int),
+          sql.nullable(sql.float, a_float),
+          sql.nullable(sql.bool, a_bool),
+          sql.nullable(sql.text, some_text),
+          sql.nullable(sql.blob, a_blob),
+        ],
+        decoder,
+      )
     assert row == #(an_int, a_float, a_bool, some_text, a_blob)
   }
 

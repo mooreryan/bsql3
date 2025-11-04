@@ -153,6 +153,22 @@ fn do_all(
   with bind_parameters: List(Value),
 ) -> Result(List(Dynamic), Error)
 
+pub fn get(
+  statement: Statement,
+  with bind_parameters: List(Value),
+  expecting decoder: Decoder(a),
+) -> Result(Option(a), Error) {
+  use maybe_row <- result.try(do_get(statement, bind_parameters))
+  decode.run(maybe_row, decode.optional(decoder))
+  |> result.map_error(DecodeError)
+}
+
+@external(javascript, "./better_sqlite3_ffi.mjs", "get")
+fn do_get(
+  statement: Statement,
+  with bind_parameters: List(Value),
+) -> Result(Dynamic, Error)
+
 pub type RunInfo {
   RunInfo(changes: Int, last_insert_row_id: Int)
 }
