@@ -324,11 +324,11 @@ pub fn verbose_db_test() {
 
 pub fn readonly_db_test() {
   let db_name = temp_db_name()
-  let assert Ok(db) = sql.new_database("/Users/ryan/Desktop/test.db")
+  let assert Ok(db) = sql.new_database(db_name)
   let assert Ok(Nil) = sql.close(db)
 
   let assert Ok(db) =
-    sql.database_builder("/Users/ryan/Desktop/test.db")
+    sql.database_builder(db_name)
     |> sql.with_readonly(True)
     |> sql.build()
 
