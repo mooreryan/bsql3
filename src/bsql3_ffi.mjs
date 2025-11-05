@@ -10,9 +10,9 @@ import {
   DatabaseBuilder$DatabaseBuilder$timeout,
   DatabaseBuilder$DatabaseBuilder$verbose,
   DatabaseBuilder$DatabaseBuilder$native_binding,
-} from "./better_sqlite3.mjs";
+} from "./bsql3.mjs";
 
-import { from_string as result_code_from_string } from "./better_sqlite3/result_code.mjs";
+import { from_string as result_code_from_string } from "./bsql3/result_code.mjs";
 
 import Database from "better-sqlite3";
 

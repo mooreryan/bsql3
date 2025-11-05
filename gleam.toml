@@ -1,4 +1,4 @@
-name = "better_sqlite3"
+name = "bsql3"
 version = "1.0.0"
 target = "javascript"
 

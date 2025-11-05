@@ -1,5 +1,5 @@
-import better_sqlite3 as sql
-import better_sqlite3/result_code
+import bsql3 as sql
+import bsql3/result_code
 import gleam/dynamic/decode.{type Decoder}
 import gleam/io
 import gleam/option.{None, Some}
@@ -335,11 +335,11 @@ pub fn readonly_db_test() {
   delete_file_if_exists(db_name)
 }
 
-@external(javascript, "./better_sqlite3_test_ffi.mjs", "temp_db_name")
+@external(javascript, "./bsql3_test_ffi.mjs", "temp_db_name")
 fn temp_db_name() -> String
 
 //
-@external(javascript, "./better_sqlite3_test_ffi.mjs", "delete_file_if_exists")
+@external(javascript, "./bsql3_test_ffi.mjs", "delete_file_if_exists")
 fn delete_file_if_exists(path: String) -> Nil
 
 pub fn statement_properties_test() {

@@ -1,4 +1,4 @@
-import better_sqlite3/result_code.{type ResultCode}
+import bsql3/result_code.{type ResultCode}
 import gleam/dynamic/decode.{type Decoder, type Dynamic}
 import gleam/list
 import gleam/option.{type Option, None, Some}
@@ -38,7 +38,7 @@ pub type DatabaseBuilder {
   )
 }
 
-@external(javascript, "./better_sqlite3_ffi.mjs", "new_database")
+@external(javascript, "./bsql3_ffi.mjs", "new_database")
 pub fn new_database(path: String) -> Result(Database, Error)
 
 pub fn database_builder(path: String) -> DatabaseBuilder {
@@ -94,16 +94,16 @@ pub fn with_native_binding(
   DatabaseBuilder(..database_builder, native_binding:)
 }
 
-@external(javascript, "./better_sqlite3_ffi.mjs", "build_database")
+@external(javascript, "./bsql3_ffi.mjs", "build_database")
 pub fn build(database_builder: DatabaseBuilder) -> Result(Database, Error)
 
-@external(javascript, "./better_sqlite3_ffi.mjs", "exec")
+@external(javascript, "./bsql3_ffi.mjs", "exec")
 pub fn exec(database: Database, sql: String) -> Result(Nil, Error)
 
-@external(javascript, "./better_sqlite3_ffi.mjs", "prepare")
+@external(javascript, "./bsql3_ffi.mjs", "prepare")
 pub fn prepare(database: Database, sql: String) -> Result(Statement, Error)
 
-@external(javascript, "./better_sqlite3_ffi.mjs", "close")
+@external(javascript, "./bsql3_ffi.mjs", "close")
 pub fn close(database: Database) -> Result(Nil, Error)
 
 // Database properties
@@ -116,19 +116,19 @@ pub fn close(database: Database) -> Result(Nil, Error)
 // .memory -> boolean - Whether the database is an in-memory or temporary database.
 // .readonly -> boolean - Whether the database connection was created in readonly mode.
 
-@external(javascript, "./better_sqlite3_ffi.mjs", "database_open")
+@external(javascript, "./bsql3_ffi.mjs", "database_open")
 pub fn database_open(database: Database) -> Bool
 
-@external(javascript, "./better_sqlite3_ffi.mjs", "database_in_transaction")
+@external(javascript, "./bsql3_ffi.mjs", "database_in_transaction")
 pub fn database_in_transaction(database: Database) -> Bool
 
-@external(javascript, "./better_sqlite3_ffi.mjs", "database_name")
+@external(javascript, "./bsql3_ffi.mjs", "database_name")
 pub fn database_name(database: Database) -> String
 
-@external(javascript, "./better_sqlite3_ffi.mjs", "database_memory")
+@external(javascript, "./bsql3_ffi.mjs", "database_memory")
 pub fn database_memory(database: Database) -> Bool
 
-@external(javascript, "./better_sqlite3_ffi.mjs", "database_readonly")
+@external(javascript, "./bsql3_ffi.mjs", "database_readonly")
 pub fn database_readonly(database: Database) -> Bool
 
 // ---------------------------------------------------------------------------
@@ -147,7 +147,7 @@ pub fn all(
   |> result.map_error(DecodeError)
 }
 
-@external(javascript, "./better_sqlite3_ffi.mjs", "all")
+@external(javascript, "./bsql3_ffi.mjs", "all")
 fn do_all(
   statement: Statement,
   with bind_parameters: List(Value),
@@ -163,7 +163,7 @@ pub fn get(
   |> result.map_error(DecodeError)
 }
 
-@external(javascript, "./better_sqlite3_ffi.mjs", "get")
+@external(javascript, "./bsql3_ffi.mjs", "get")
 fn do_get(
   statement: Statement,
   with bind_parameters: List(Value),
@@ -192,7 +192,7 @@ pub fn run(
   |> result.map_error(DecodeError)
 }
 
-@external(javascript, "./better_sqlite3_ffi.mjs", "run")
+@external(javascript, "./bsql3_ffi.mjs", "run")
 fn do_run(
   statement: Statement,
   with bind_parameters: List(Value),
@@ -200,28 +200,28 @@ fn do_run(
 
 /// Will return an `Error` if you call it on a statement that doesn't return data.
 ///
-@external(javascript, "./better_sqlite3_ffi.mjs", "raw")
+@external(javascript, "./bsql3_ffi.mjs", "raw")
 pub fn raw(statement: Statement, toggle_raw: Bool) -> Result(Statement, Error)
 
 // Statement properties
 
-@external(javascript, "./better_sqlite3_ffi.mjs", "statement_database")
+@external(javascript, "./bsql3_ffi.mjs", "statement_database")
 pub fn statement_database(statement: Statement) -> Database
 
-@external(javascript, "./better_sqlite3_ffi.mjs", "statement_source")
+@external(javascript, "./bsql3_ffi.mjs", "statement_source")
 pub fn statement_source(statement: Statement) -> String
 
-@external(javascript, "./better_sqlite3_ffi.mjs", "statement_reader")
+@external(javascript, "./bsql3_ffi.mjs", "statement_reader")
 pub fn statement_reader(statement: Statement) -> Bool
 
-@external(javascript, "./better_sqlite3_ffi.mjs", "statement_readonly")
+@external(javascript, "./bsql3_ffi.mjs", "statement_readonly")
 pub fn statement_readonly(statement: Statement) -> Bool
 
 // ---------------------------------------------------------------------------
 // Pragmas -------------------------------------------------------------------
 // ---------------------------------------------------------------------------
 
-@external(javascript, "./better_sqlite3_ffi.mjs", "pragma")
+@external(javascript, "./bsql3_ffi.mjs", "pragma")
 pub fn pragma(database: Database, sql: String) -> Result(Nil, Error)
 
 pub fn pragma_simple(
@@ -233,7 +233,7 @@ pub fn pragma_simple(
   decode.run(value, decoder) |> result.map_error(DecodeError)
 }
 
-@external(javascript, "./better_sqlite3_ffi.mjs", "pragma_simple")
+@external(javascript, "./bsql3_ffi.mjs", "pragma_simple")
 fn do_pragma_simple(database: Database, sql: String) -> Result(Dynamic, Error)
 
 pub fn pragma_all(
@@ -246,7 +246,7 @@ pub fn pragma_all(
   |> result.map_error(DecodeError)
 }
 
-@external(javascript, "./better_sqlite3_ffi.mjs", "pragma_all")
+@external(javascript, "./bsql3_ffi.mjs", "pragma_all")
 fn do_pragma_all(
   database: Database,
   sql: String,
@@ -258,7 +258,7 @@ fn do_pragma_all(
 
 pub type Value
 
-@external(javascript, "./better_sqlite3_ffi.mjs", "coerce")
+@external(javascript, "./bsql3_ffi.mjs", "coerce")
 fn coerce(a: a) -> Value
 
 /// Convert a Gleam `Option` to an SQLite nullable value for use as a bind
@@ -291,7 +291,7 @@ pub fn text(value: String) -> Value {
 
 /// Convert a Gleam `BitString` to an SQLite blob for use as a bind parameter.
 ///
-@external(javascript, "./better_sqlite3_ffi.mjs", "coerce_blob")
+@external(javascript, "./bsql3_ffi.mjs", "coerce_blob")
 pub fn blob(value: BitArray) -> Value
 
 /// Convert a Gleam `Bool` to an SQLite int for use as a bind parameter.
@@ -310,7 +310,7 @@ pub fn bool(value: Bool) -> Value {
 
 /// Construct an SQLite null for use as a bind parameter.
 ///
-@external(javascript, "./better_sqlite3_ffi.mjs", "null_")
+@external(javascript, "./bsql3_ffi.mjs", "null_")
 pub fn null() -> Value
 
 /// Decode an SQLite boolean value.
