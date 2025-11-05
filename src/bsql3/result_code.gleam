@@ -1,9 +1,12 @@
 /// These codes are taken from the better-sqlite cpp code, which takes them from
-/// the codes listed here: https://sqlite.org/rescode.html
+/// the codes listed in the [SQLite3 docs](https://sqlite.org/rescode.html).
+///
+/// Note that the SQLite3 error codes are a subset of the result codes. All of
+/// the variants here other than `Unknown`, `Ok`, `Row`, and `Done` are the
+/// error codes.
 ///
 /// There is also a special `Unknown` variant. It represents SQLite errors not
-/// recognized by the better-sqlite3 package. See
-/// https://github.com/WiseLibs/better-sqlite3/blob/master/docs/api.md#class-sqliteerror
+/// recognized by the [better-sqlite3 package](https://github.com/WiseLibs/better-sqlite3/blob/master/docs/api.md#class-sqliteerror).
 ///
 pub type ResultCode {
 
@@ -127,6 +130,11 @@ pub type ResultCode {
   OkSymlink
 }
 
+/// Convert a result code to a string.
+///
+/// Other than the "unknown" code, these should match the names used in the
+/// SQLite3 code.
+///
 pub fn to_string(result_code: ResultCode) -> String {
   case result_code {
     Unknown(code) -> "SQLITE_UNKNOWN(" <> code <> ")"
@@ -240,6 +248,15 @@ pub fn to_string(result_code: ResultCode) -> String {
   }
 }
 
+/// Convert a string representation of an result code into a `ResultCode` value.
+/// Any unknown errors will be converted to `Unknown`. See [class
+/// SqliteError](https://github.com/WiseLibs/better-sqlite3/blob/master/docs/api.md#class-sqliteerror)
+/// for info about unknown error codes in the better-sqlite3 package.
+///
+/// Note that we don't differentiate between bogus error codes and the
+/// `UNKNOWN_SQLITE_ERROR_NNNN` style used by better-sqlite3. Both of them will
+/// be converted to `Unknown`.
+///
 pub fn from_string(code: String) -> ResultCode {
   case code {
     "SQLITE_OK" -> Ok
