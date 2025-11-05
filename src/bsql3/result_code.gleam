@@ -134,7 +134,7 @@ pub type ResultCode {
 
 pub fn to_string(result_code: ResultCode) -> String {
   case result_code {
-    SqliteUnknown(code) -> "UNKNOWN(" <> code <> ")"
+    SqliteUnknown(code) -> "SQLITE_UNKNOWN(" <> code <> ")"
     SqliteOk -> "SQLITE_OK"
     SqliteRow -> "SQLITE_ROW"
     SqliteDone -> "SQLITE_DONE"
