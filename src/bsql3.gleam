@@ -5,10 +5,11 @@ import gleam/option.{type Option, None, Some}
 import gleam/result
 
 pub type Error {
-  /// Errors that originate in the JS FFI code, but that are not sqlite errors.
+  /// Errors that originate in the JS FFI code, but that are not SQLite3 errors.
   ///
-  /// If any of the fields are not present in the error, `"~UNKNOWN~"` will be
-  /// used.
+  /// For example, better-sqlite will throw a JavaScript TypeError in certain
+  /// situations like when trying to call the `raw` method on a
+  /// statement that does not return data.
   ///
   JsError(name: String, message: String)
 
