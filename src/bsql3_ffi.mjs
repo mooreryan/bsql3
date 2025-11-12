@@ -4,12 +4,12 @@ import { Option$isSome, Option$Some$0 } from "../gleam_stdlib/gleam/option.mjs";
 import {
   Error$JsError,
   Error$SqliteError,
-  DatabaseBuilder$DatabaseBuilder$path,
-  DatabaseBuilder$DatabaseBuilder$readonly,
-  DatabaseBuilder$DatabaseBuilder$file_must_exist,
-  DatabaseBuilder$DatabaseBuilder$timeout,
-  DatabaseBuilder$DatabaseBuilder$verbose,
-  DatabaseBuilder$DatabaseBuilder$native_binding,
+  Configuration$Configuration$path,
+  Configuration$Configuration$readonly,
+  Configuration$Configuration$file_must_exist,
+  Configuration$Configuration$timeout,
+  Configuration$Configuration$verbose,
+  Configuration$Configuration$native_binding,
 } from "./bsql3.mjs";
 
 import { from_string as result_code_from_string } from "./bsql3/result_code.mjs";
@@ -29,11 +29,11 @@ export function new_database(path) {
   }
 }
 
-export function build_database(database_builder) {
+export function build_database(configuration) {
   try {
     const database = new Database(
-      DatabaseBuilder$DatabaseBuilder$path(database_builder),
-      database_options_from_database_builder(database_builder),
+      Configuration$Configuration$path(configuration),
+      database_options_from_configuration(configuration),
     );
     return Result$Ok(database);
   } catch (error) {
@@ -41,21 +41,20 @@ export function build_database(database_builder) {
   }
 }
 
-function database_options_from_database_builder(database_builder) {
+function database_options_from_configuration(configuration) {
   let options = {
-    readonly: DatabaseBuilder$DatabaseBuilder$readonly(database_builder),
-    fileMustExist:
-      DatabaseBuilder$DatabaseBuilder$file_must_exist(database_builder),
-    timeout: DatabaseBuilder$DatabaseBuilder$timeout(database_builder),
+    readonly: Configuration$Configuration$readonly(configuration),
+    fileMustExist: Configuration$Configuration$file_must_exist(configuration),
+    timeout: Configuration$Configuration$timeout(configuration),
   };
 
-  const verbose = DatabaseBuilder$DatabaseBuilder$verbose(database_builder);
+  const verbose = Configuration$Configuration$verbose(configuration);
   if (Option$isSome(verbose)) {
     options.verbose = Option$Some$0(verbose);
   }
 
   const nativeBinding =
-    DatabaseBuilder$DatabaseBuilder$native_binding(database_builder);
+    Configuration$Configuration$native_binding(configuration);
   if (Option$isSome(nativeBinding)) {
     options.nativeBinding = Option$Some$0(nativeBinding);
   }

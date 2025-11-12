@@ -21,14 +21,14 @@
 //// With default options:
 //// - [new_database](#new_database)
 ////
-//// Database builder:
-//// - [database_builder](#database_builder)
-//// - [with_file_must_exist](#with_file_must_exist)
-//// - [with_native_binding](#with_native_binding)
-//// - [with_path](#with_path)
-//// - [with_readonly](#with_readonly)
-//// - [with_timeout](#with_timeout)
-//// - [with_verbose](#with_verbose)
+//// Database configuration:
+//// - [configure](#configure)
+//// - [file_must_exist](#file_must_exist)
+//// - [native_binding](#native_binding)
+//// - [path](#path)
+//// - [readonly](#readonly)
+//// - [timeout](#timeout)
+//// - [verbose](#verbose)
 ////
 //// ### Closing connections
 ////
@@ -80,10 +80,10 @@
 //// - [blob](#blob)
 //// - [bool](#bool)
 //// - [decode_bool](#decode_bool)
-//// - [float](#float)
 //// - [int](#int)
 //// - [null](#null)
 //// - [nullable](#nullable)
+//// - [real](#real)
 //// - [text](#text)
 ////
 
@@ -123,13 +123,23 @@ pub type Error {
 ///
 pub type Database
 
-/// Type representing database builders. You can use this to build up a database
-/// connection if you need to specify any options.
+/// Type representing database configuration. You can use this type with the
+/// [build](#build) function to create up a database connection when you need to
+/// specify any options.
+///
+/// You can use these functions for a builder-style interface:
+/// - [configure](#configure)
+/// - [file_must_exist](#file_must_exist)
+/// - [native_binding](#native_binding)
+/// - [path](#path)
+/// - [readonly](#readonly)
+/// - [timeout](#timeout)
+/// - [verbose](#verbose)
 ///
 /// These options are described in the [better-sqlite3 docs](https://github.com/WiseLibs/better-sqlite3/blob/master/docs/api.md#class-database).
 ///
-pub type DatabaseBuilder {
-  DatabaseBuilder(
+pub type Configuration {
+  Configuration(
     /// Path to the database
     ///
     /// - For in-memory databases, pass `":memory:"`
@@ -172,12 +182,12 @@ pub type DatabaseBuilder {
 @external(javascript, "./bsql3_ffi.mjs", "new_database")
 pub fn new_database(path: String) -> Result(Database, Error)
 
-/// Create a new `DatabaseBuilder` with the default options.
+/// Create a new `Configuration` with the default options.
 ///
 /// See that type's docs for info on defaults.
 ///
-pub fn database_builder(path: String) -> DatabaseBuilder {
-  DatabaseBuilder(
+pub fn configure(path: String) -> Configuration {
+  Configuration(
     path:,
     readonly: False,
     file_must_exist: False,
@@ -187,64 +197,55 @@ pub fn database_builder(path: String) -> DatabaseBuilder {
   )
 }
 
-/// Update the `path` option in the given `database_builder`.
+/// Update the `path` option in the given `configuration`.
 ///
-pub fn with_path(
-  database_builder: DatabaseBuilder,
-  path: String,
-) -> DatabaseBuilder {
-  DatabaseBuilder(..database_builder, path:)
+pub fn path(configuration: Configuration, path: String) -> Configuration {
+  Configuration(..configuration, path:)
 }
 
-/// Update the `readonly` option in the given `database_builder`.
+/// Update the `readonly` option in the given `configuration`.
 ///
-pub fn with_readonly(
-  database_builder: DatabaseBuilder,
-  readonly: Bool,
-) -> DatabaseBuilder {
-  DatabaseBuilder(..database_builder, readonly:)
+pub fn readonly(configuration: Configuration, readonly: Bool) -> Configuration {
+  Configuration(..configuration, readonly:)
 }
 
-/// Update the `file_must_exist` option in the given `database_builder`.
+/// Update the `file_must_exist` option in the given `configuration`.
 ///
-pub fn with_file_must_exist(
-  database_builder: DatabaseBuilder,
+pub fn file_must_exist(
+  configuration: Configuration,
   file_must_exist: Bool,
-) -> DatabaseBuilder {
-  DatabaseBuilder(..database_builder, file_must_exist:)
+) -> Configuration {
+  Configuration(..configuration, file_must_exist:)
 }
 
-/// Update the `timeout` option in the given `database_builder`.
+/// Update the `timeout` option in the given `configuration`.
 ///
-pub fn with_timeout(
-  database_builder: DatabaseBuilder,
-  timeout: Int,
-) -> DatabaseBuilder {
-  DatabaseBuilder(..database_builder, timeout:)
+pub fn timeout(configuration: Configuration, timeout: Int) -> Configuration {
+  Configuration(..configuration, timeout:)
 }
 
-/// Update the `verbose` option in the given `database_builder`.
+/// Update the `verbose` option in the given `configuration`.
 ///
-pub fn with_verbose(
-  database_builder: DatabaseBuilder,
+pub fn verbose(
+  configuration: Configuration,
   verbose: Option(fn(String) -> Nil),
-) -> DatabaseBuilder {
-  DatabaseBuilder(..database_builder, verbose:)
+) -> Configuration {
+  Configuration(..configuration, verbose:)
 }
 
-/// Update the `native_binding` option in the given `database_builder`.
+/// Update the `native_binding` option in the given `configuration`.
 ///
-pub fn with_native_binding(
-  database_builder: DatabaseBuilder,
+pub fn native_binding(
+  configuration: Configuration,
   native_binding: Option(String),
-) -> DatabaseBuilder {
-  DatabaseBuilder(..database_builder, native_binding:)
+) -> Configuration {
+  Configuration(..configuration, native_binding:)
 }
 
-/// Builds a database connection from the given `database_builder`.
+/// Builds a database connection from the given `configuration`.
 ///
 @external(javascript, "./bsql3_ffi.mjs", "build_database")
-pub fn build(database_builder: DatabaseBuilder) -> Result(Database, Error)
+pub fn build(configuration: Configuration) -> Result(Database, Error)
 
 /// Executes the given SQL string on the database connection.
 ///
