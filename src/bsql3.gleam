@@ -537,7 +537,7 @@ pub type Value
 @external(javascript, "./bsql3_ffi.mjs", "coerce")
 fn coerce(a: a) -> Value
 
-/// Convert a Gleam `Option` to an SQLite nullable value for use as a bind
+/// Convert a Gleam `Option` to an SQLite nullable value to use as a bind
 /// parameter.
 ///
 pub fn nullable(coerce: fn(a) -> Value, value: Option(a)) -> Value {
@@ -547,30 +547,30 @@ pub fn nullable(coerce: fn(a) -> Value, value: Option(a)) -> Value {
   }
 }
 
-/// Convert a Gleam `Int` to an SQLite int for use as a bind parameter.
+/// Convert a Gleam `Int` to an SQLite `INTEGER` to use as a bind parameter.
 ///
 pub fn int(value: Int) -> Value {
   coerce(value)
 }
 
-/// Convert a Gleam `Float` to an SQLite float for use as a bind parameter.
+/// Convert a Gleam `Float` to an SQLite `REAL` to use as a bind parameter.
 ///
-pub fn float(value: Float) -> Value {
+pub fn real(value: Float) -> Value {
   coerce(value)
 }
 
-/// Convert a Gleam `String` to an SQLite text for use as a bind parameter.
+/// Convert a Gleam `String` to an SQLite `TEXT` to use as a bind parameter.
 ///
 pub fn text(value: String) -> Value {
   coerce(value)
 }
 
-/// Convert a Gleam `BitString` to an SQLite blob for use as a bind parameter.
+/// Convert a Gleam `BitString` to an SQLite `BLOB` to use as a bind parameter.
 ///
 @external(javascript, "./bsql3_ffi.mjs", "coerce_blob")
 pub fn blob(value: BitArray) -> Value
 
-/// Convert a Gleam `Bool` to an SQLite int for use as a bind parameter.
+/// Convert a Gleam `Bool` to an SQLite `INTEGER` to use as a bind parameter.
 ///
 /// SQLite does not have a native boolean type. Instead, it uses ints, where 0
 /// is False and 1 is True. Because of this the Gleam stdlib decoder for bools
@@ -584,7 +584,7 @@ pub fn bool(value: Bool) -> Value {
   }
 }
 
-/// Construct an SQLite null for use as a bind parameter.
+/// Construct an SQLite `NULL` to use as a bind parameter.
 ///
 @external(javascript, "./bsql3_ffi.mjs", "null_")
 pub fn null() -> Value

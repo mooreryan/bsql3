@@ -101,6 +101,15 @@ pub fn db_close_test() {
   let assert Error(sql.JsError(_, _)) = sql.exec(db, "SELECT 1")
 }
 
+/// You can close the DB multiple times and nothing bad happens.
+///
+pub fn multiple_close_test() {
+  let assert Ok(db) = sql.new_database(":memory:")
+  let assert Ok(Nil) = sql.close(db)
+  let assert Ok(Nil) = sql.close(db)
+  let assert Ok(Nil) = sql.close(db)
+}
+
 /// The following actions give an error:
 ///
 /// 1. Create DB
@@ -266,7 +275,7 @@ pub fn coerce_roundtrip_test() {
         stmt,
         [
           sql.nullable(sql.int, an_int),
-          sql.nullable(sql.float, a_float),
+          sql.nullable(sql.real, a_float),
           sql.nullable(sql.bool, a_bool),
           sql.nullable(sql.text, some_text),
           sql.nullable(sql.blob, a_blob),
@@ -281,7 +290,7 @@ pub fn coerce_roundtrip_test() {
         stmt,
         [
           sql.nullable(sql.int, an_int),
-          sql.nullable(sql.float, a_float),
+          sql.nullable(sql.real, a_float),
           sql.nullable(sql.bool, a_bool),
           sql.nullable(sql.text, some_text),
           sql.nullable(sql.blob, a_blob),
